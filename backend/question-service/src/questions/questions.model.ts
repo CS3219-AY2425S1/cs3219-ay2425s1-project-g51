@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question, QuestionDocument } from './schemas/question.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
+import { FilterQuestionDto } from './dto/filter-question.dto';
 
 @Injectable()
 export class QuestionDB {
@@ -18,16 +19,28 @@ export class QuestionDB {
     return newQuestion.save();
   }
 
-  async findAllQuestionsInDB(): Promise<Partial<Question>[]> {
-    return this.questionModel
-      .find()
-      .select('questionId title categories complexity')
-      .exec();
+  async findAllQuestionsInDB(filterDto?: FilterQuestionDto): Promise<Partial<Question>[]> {
+    const filterQuery: FilterQuery<QuestionDocument> = {};
+  
+    if (filterDto?.categories && filterDto.categories.length > 0) {
+      filterQuery.categories = { $all: filterDto.categories };
+    }
+  
+    if (filterDto?.complexity) {
+      filterQuery.complexity = filterDto.complexity;
+    }
+  
+    const query = this.questionModel.find(filterQuery);
+  
+    return await query.select('questionId title categories complexity').exec();
   }
 
   async findOneQuestionInDB(questionId: string): Promise<Question> {
+    if (!Types.ObjectId.isValid(questionId)) {
+      throw new BadRequestException(`Invalid question ID format`);
+    }
     const questionById = await this.questionModel
-      .findOne({ questionId })
+      .findById( questionId )
       .exec();
     if (!questionById) {
       throw new NotFoundException(
@@ -42,8 +55,11 @@ export class QuestionDB {
     questionId: string,
     updateQuestionDto: UpdateQuestionDto,
   ): Promise<Question> {
+    if (!Types.ObjectId.isValid(questionId)) {
+      throw new BadRequestException(`Invalid question ID format`);
+    }
     const questionToUpdate = await this.questionModel
-      .findOneAndUpdate({ questionId }, updateQuestionDto, { new: true })
+      .findByIdAndUpdate(questionId, updateQuestionDto, { new: true })
       .exec();
     if (!questionToUpdate) {
       throw new NotFoundException(`There is no question with ID ${questionId}`);
@@ -53,8 +69,11 @@ export class QuestionDB {
   }
 
   async removeQuestionInDB(questionId: string): Promise<Question> {
+    if (!Types.ObjectId.isValid(questionId)) {
+      throw new BadRequestException(`Invalid question ID format`);
+    }
     const questionToDelete = await this.questionModel
-      .findOneAndDelete({ questionId })
+      .findByIdAndDelete(questionId)
       .exec();
     if (!questionToDelete) {
       throw new NotFoundException(`There is no question with ID ${questionId}`);

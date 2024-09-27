@@ -3,6 +3,7 @@ import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionDB } from './questions.model';
 import { Question } from './schemas/question.schema';
+import { FilterQuestionDto } from './dto/filter-question.dto';
 
 @Injectable()
 export class QuestionsService {
@@ -12,11 +13,11 @@ export class QuestionsService {
     return this.questionDB.createQuestionInDB(createQuestionDto);
   }
 
-  async findAll(): Promise<Partial<Question>[]> {
-    return this.questionDB.findAllQuestionsInDB();
+  async findAll(filterDto: FilterQuestionDto): Promise<Partial<Question>[]> {
+    return this.questionDB.findAllQuestionsInDB(filterDto);
   }
 
-  async findOne(questionId: string): Promise<Question> {
+  async findById(questionId: string): Promise<Question> {
     return this.questionDB.findOneQuestionInDB(questionId);
   }
 

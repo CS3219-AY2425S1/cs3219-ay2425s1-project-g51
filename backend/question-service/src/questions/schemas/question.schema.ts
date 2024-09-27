@@ -1,12 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, SchemaTypes, Types } from 'mongoose';
+import { QuestionCategory, QuestionComplexity } from '../types/question.types';
 
 export type QuestionDocument = HydratedDocument<Question>;
 
-@Schema({ collection: 'questions' })
+@Schema({ collection: 'questions', timestamps: true })
 export class Question {
-  @Prop({ required: true })
-  questionId: string;
+  _id: Types.ObjectId;
 
   @Prop({ required: true })
   title: string;
@@ -14,11 +14,19 @@ export class Question {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ required: true, type: [String] })
-  categories: string[];
+  //TODO: test this 
+  @Prop({ 
+    required: true, 
+    type: [String],
+    enum: QuestionCategory,
+    })
+  categories: QuestionCategory[];
 
-  @Prop({ required: true })
-  complexity: string;
+  @Prop({ 
+    required: true,
+    type: String,
+    enum: QuestionComplexity,})
+   complexity: QuestionComplexity;
 }
 
 export const QuestionSchema = SchemaFactory.createForClass(Question);

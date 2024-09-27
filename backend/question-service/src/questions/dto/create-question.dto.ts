@@ -1,7 +1,21 @@
+import { ArrayNotEmpty, ArrayUnique, IsArray, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { QuestionCategory, QuestionComplexity } from '../types/question.types';
+
 export class CreateQuestionDto {
-  questionId: string;
+  @IsNotEmpty()
+  @IsString()
   title: string;
+
+  @IsNotEmpty()
+  @IsString()
   description: string;
-  categories: string[];
-  complexity: string;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsEnum(QuestionCategory, { each: true })
+  categories: QuestionCategory[];
+
+  @IsEnum(QuestionComplexity)
+  complexity: QuestionComplexity;
 }
