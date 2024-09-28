@@ -48,7 +48,7 @@ export class QuestionsController {
       if (complexity) {
         filterDto.complexity = complexity;
       }
-      return this.questionsService.findAll(filterDto);
+      return await this.questionsService.findAll(filterDto);
     } catch (error) {
       throw new InternalServerErrorException(`Failed to find questions`);
     }
@@ -84,7 +84,7 @@ export class QuestionsController {
   @Delete(':questionId')
   async remove(@Param('questionId') questionId: string): Promise<Question> {
     try {
-      return this.questionsService.remove(questionId);
+      return await this.questionsService.remove(questionId);
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
