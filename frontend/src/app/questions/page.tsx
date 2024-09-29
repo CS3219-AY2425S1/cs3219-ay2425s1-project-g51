@@ -161,17 +161,7 @@ export default function Questions() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <Card className="bg-accent text-accent-foreground p-6 rounded-lg shadow-md">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-2xl font-bold">56</h3>
-              <p className="text-sm">Problems Solved</p>
-            </div>
-            <CheckIcon className="w-10 h-10" />
-          </div>
-        </Card>
-      </div>
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Interview Questions</h2>
         <Button onClick={handleAddQuestion}>
