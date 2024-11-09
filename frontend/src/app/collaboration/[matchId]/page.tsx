@@ -572,7 +572,7 @@ Found indices: [0, 1]
         </div>
       </div>
       <div className="absolute bottom-0 left-0 z-50">
-        <VideoDisplay />
+        <VideoDisplay sessionId={matchId} />
       </div>
     </div>
   )

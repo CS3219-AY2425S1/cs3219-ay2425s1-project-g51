@@ -1,15 +1,20 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import AgoraRTC, { ILocalVideoTrack, ILocalAudioTrack, IRemoteVideoTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
+import AgoraRTC, { ILocalVideoTrack, ILocalAudioTrack, IRemoteVideoTrack, IRemoteAudioTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 import { useRouter } from 'next/navigation';
 import { verifyToken } from '@/lib/api-user';
 import { Video, VideoOff, Mic, MicOff } from 'lucide-react';
 
-export default function VideoDisplay() {
+interface VideoDisplayProps {
+  sessionId: string;
+}
+
+export default function VideoDisplay({ sessionId }: VideoDisplayProps) {
   const [localVideoTrack, setLocalVideoTrack] = useState<ILocalVideoTrack | null>(null);
   const [localAudioTrack, setLocalAudioTrack] = useState<ILocalAudioTrack | null>(null);
-  const [remoteTracks, setRemoteTracks] = useState<Map<string, IRemoteVideoTrack>>(new Map());
+  const [remoteVideoTrack, setRemoteVideoTrack] = useState<IRemoteVideoTrack | null>(null);
+  const [remoteAudioTrack, setRemoteAudioTrack] = useState<IRemoteAudioTrack | null>(null);
   const [localAudioEnabled, setLocalAudioEnabled] = useState(true);
   const [remoteAudioEnabled, setRemoteAudioEnabled] = useState(true);
   const [localVideoEnabled, setLocalVideoEnabled] = useState(true);
@@ -48,7 +53,7 @@ export default function VideoDisplay() {
     fetchUserId();
   }, [router]);
 
-  const playTracks = () => {
+  const playVideoTracks = () => {
     if (localVideoTrack && localVideoRef.current && localVideoEnabled) {
       try {
         localVideoTrack.play(localVideoRef.current);
@@ -57,21 +62,20 @@ export default function VideoDisplay() {
       }
     }
 
-    remoteTracks.forEach((track) => {
-      if (remoteVideoRef.current && remoteVideoEnabled) {
-        try {
-          track.play(remoteVideoRef.current);
-        } catch (error) {
-          console.error('Error playing remote video:', error);
-        }
+    if (remoteVideoTrack && remoteVideoRef.current && remoteVideoEnabled) {
+      try {
+        remoteVideoTrack.play(remoteVideoRef.current);
+      } catch (error) {
+        console.error('Error playing remote video:', error);
       }
-    });
+    }
   };
 
   useEffect(() => {
-    playTracks();
-  }, [localVideoTrack, remoteTracks, localVideoEnabled, remoteVideoEnabled]);
+    playVideoTracks();
+  }, [localVideoTrack, remoteVideoTrack, localVideoEnabled, remoteVideoEnabled]);
 
+  
   useEffect(() => {
     if (!userId) return;
 
@@ -89,7 +93,7 @@ export default function VideoDisplay() {
           await clientRef.current.leave();
         }
 
-        await clientRef.current.join(appId, 'channel-name', null, userId);
+        await clientRef.current.join(appId, sessionId, null, userId);
         console.log('Successfully joined channel');
 
         const videoTrack = await AgoraRTC.createCameraVideoTrack({
@@ -115,19 +119,15 @@ export default function VideoDisplay() {
         clientRef.current.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
           console.log('Remote user published:', user.uid, mediaType);
           await clientRef.current.subscribe(user, mediaType);
-          
-          if (mediaType === 'video') {
+
+          if (mediaType === 'video' && user.videoTrack) {
             if (mounted) {
-              if (user.videoTrack) {
-                setRemoteTracks(prev => new Map(prev.set(user.uid.toString(), user.videoTrack)));
-                setRemoteVideoEnabled(true);
-              } else {
-                setRemoteVideoEnabled(false);
-              }
-              // Set remote username from user metadata if available
+              setRemoteVideoTrack(user.videoTrack);
+              setRemoteVideoEnabled(true);
               setRemoteUsername(user.uid.toString());
             }
-          } else if (mediaType === 'audio') {
+          } else if (mediaType === 'audio' && user.audioTrack) {
+            setRemoteAudioTrack(user.audioTrack);
             setRemoteAudioEnabled(true);
           }
         });
@@ -135,13 +135,10 @@ export default function VideoDisplay() {
         clientRef.current.on('user-unpublished', (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
           console.log('Remote user unpublished:', user.uid, mediaType);
           if (mediaType === 'video' && mounted) {
-            setRemoteTracks(prev => {
-              const newTracks = new Map(prev);
-              newTracks.delete(user.uid.toString());
-              return newTracks;
-            });
+            setRemoteVideoTrack(null);
             setRemoteVideoEnabled(false);
           } else if (mediaType === 'audio') {
+            setRemoteAudioTrack(null);
             setRemoteAudioEnabled(false);
           }
         });
@@ -149,12 +146,9 @@ export default function VideoDisplay() {
         clientRef.current.on('user-left', (user: IAgoraRTCRemoteUser) => {
           console.log('Remote user left:', user.uid);
           if (mounted) {
-            setRemoteTracks(prev => {
-              const newTracks = new Map(prev);
-              newTracks.delete(user.uid.toString());
-              return newTracks;
-            });
+            setRemoteVideoTrack(null);
             setRemoteVideoEnabled(false);
+            setRemoteAudioTrack(null);
             setRemoteAudioEnabled(false);
             setRemoteUsername('');
           }
@@ -180,11 +174,11 @@ export default function VideoDisplay() {
           localAudioTrack.close();
         }
 
-        remoteTracks.forEach(track => {
-          track.stop();
-          track.close();
-        });
-        setRemoteTracks(new Map());
+        if (remoteVideoTrack) {
+          remoteVideoTrack.stop();
+          remoteVideoTrack.close();
+        }
+        setRemoteVideoTrack(null);
 
         if (clientRef.current.connectionState === 'CONNECTED') {
           await clientRef.current.leave();
@@ -196,7 +190,7 @@ export default function VideoDisplay() {
   }, [userId]);
 
   const toggleVideo = async () => {
-    if (localVideoTrack) {
+    if(localVideoTrack) {
       try {
         await localVideoTrack.setEnabled(!localVideoEnabled);
         setLocalVideoEnabled(!localVideoEnabled);
@@ -206,18 +200,46 @@ export default function VideoDisplay() {
     }
   };
 
+  // const toggleAudio = async () => {
+  //   // if(localAudioTrack) {
+  //     try {
+  //       console.log('1. Toggling audio, video state: ', localAudioEnabled, localVideoEnabled);
+  //       await localAudioTrack.setEnabled(!localAudioEnabled);
+  //       console.log('2. Toggling audio, video state: ', localAudioEnabled, localVideoEnabled);
+  //       setLocalAudioEnabled(!localAudioEnabled);
+  //       console.log('3. Toggling audio, video state: ', localAudioEnabled, localVideoEnabled);
+  //     } catch (error) {
+  //       console.error('Error toggling audio:', error);
+  //     }
+  //   // }
+  //   console.log('4. Toggling audio, video state: ', localAudioEnabled, localVideoEnabled);
+  // };
+
   const toggleAudio = async () => {
-    if (localAudioTrack) {
-      try {
-        await localAudioTrack.setEnabled(!localAudioEnabled);
-        setLocalAudioEnabled(!localAudioEnabled);
-      } catch (error) {
-        console.error('Error toggling audio:', error);
-      }
-    }
+    // if (localAudioTrack) {
+    //   try {
+    //     console.log('1. Toggling audio, current states - audio:', localAudioEnabled, 'video:', localVideoEnabled);
+  
+    //     // Toggle the local audio track
+    //     await localAudioTrack.setEnabled(!localAudioEnabled);
+
+    //     const newState = !localAudioEnabled;
+  
+    //     // Update the state only after toggling is complete
+    //     setLocalAudioEnabled((prev) => {
+    //       console.log('2. Audio toggled successfully, new audio state:', newState);
+    //       return newState;
+    //     });
+  
+    //     console.log('3. Final states after toggling - audio:', newState, 'video:', localVideoEnabled);
+    //   } catch (error) {
+    //     console.error('Error toggling audio:', error);
+    //   }
+    // }
   };
 
   const VideoContainer = ({ isLocal = false }) => {
+    console.log('Rendering VideoContainer:', isLocal);
     const [showControls, setShowControls] = useState(false);
     const isVideoEnabled = isLocal ? localVideoEnabled : remoteVideoEnabled;
     const isAudioEnabled = isLocal ? localAudioEnabled : remoteAudioEnabled;
@@ -236,7 +258,7 @@ export default function VideoDisplay() {
         />
         {!isVideoEnabled && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-white text-2xl font-bold">
-            {getInitials(username || 'Remote User')}
+            {username? getInitials(username) : 'Unavailable'}
           </div>
         )}
         
@@ -258,14 +280,14 @@ export default function VideoDisplay() {
                 </button>
               </>
             ) : (
-              <div className="flex space-x-2">
-                <span className={`p-1 text-white ${isVideoEnabled ? 'opacity-100' : 'opacity-50'}`}>
+              <>
+                <button className="p-1 rounded-full text-white">
                   {isVideoEnabled ? <Video size={20} /> : <VideoOff size={20} />}
-                </span>
-                <span className={`p-1 text-white ${isAudioEnabled ? 'opacity-100' : 'opacity-50'}`}>
+                </button>
+                <button className="p-1 rounded-full text-white">
                   {isAudioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
-                </span>
-              </div>
+                </button>
+              </>
             )}
           </div>
         )}
@@ -274,9 +296,9 @@ export default function VideoDisplay() {
   };
 
   return (
-      <div className="fixed bottom-4 left-4 flex space-x-4 mx-3">
-        <VideoContainer isLocal={true} />
-        <VideoContainer isLocal={false} />
-      </div>
+    <div className="flex space-x-2">
+      <VideoContainer isLocal />
+      <VideoContainer />
+    </div>
   );
 }
