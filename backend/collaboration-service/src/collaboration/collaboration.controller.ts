@@ -8,14 +8,15 @@ export class CollabController {
   @Post('create-session/:matchId')
   async createSession(
     @Param('matchId') matchId: string,
-    @Body() body: { topic: string; difficulty: string },
+    @Body() body: { topic: string; difficulty: string; userIds: string[] },
   ) {
-    const { topic, difficulty } = body;
+    const { topic, difficulty, userIds } = body;
 
     const initQuestion = await this.collabService.createSessionRecord(
       matchId,
       difficulty,
       topic,
+      userIds,
     );
 
     return {

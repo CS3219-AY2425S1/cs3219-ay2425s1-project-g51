@@ -2,10 +2,12 @@ ARG NODE_VERSION=18.20.4
 
 ################################################################################
 # Use node image for base image for all stages.
-FROM node:${NODE_VERSION}-alpine as base
+FROM node:${NODE_VERSION}-alpine AS base
 
 # Set working directory for all build stages.
 WORKDIR /usr/src/app
+
+ENV HOST=0.0.0.0
 
 # Copy package.json so that package manager commands can be used.
 COPY package*.json .
@@ -17,7 +19,7 @@ RUN npm install
 COPY . .
 
 # Expose the port that the application listens on.
-EXPOSE 8000
+EXPOSE 8080
 
 # Run the application.
-CMD npm run start:dev
+CMD ["npm", "start"]

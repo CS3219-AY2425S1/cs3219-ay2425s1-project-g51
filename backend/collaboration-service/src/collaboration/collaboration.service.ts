@@ -29,14 +29,25 @@ export class CollabService {
     matchId: string,
     id: string,
     username: string,
-  ): Promise<void> {
-    await this.collabRedisService.addWebSocketId(matchId, id);
+  ): Promise<boolean> {
+    const addWsIDtoTRedis = await this.collabRedisService.addWebSocketId(
+      matchId,
+      id,
+      username,
+    );
+
+    if (!addWsIDtoTRedis) {
+      return false;
+    }
+
     const webSocketKey = {
       matchId: matchId,
       username: username,
     };
     await this.collabRedisService.addWebSocketKey(id, webSocketKey);
     this.logger.log(`WebSocket ID ${id} registered for session ${matchId}`);
+
+    return true;
   }
 
   async updateSessionQuestion(
@@ -54,8 +65,11 @@ export class CollabService {
       this.logger.debug(
         `Request body for calling question collab: ${JSON.stringify(requestBody, null, 2)}`,
       );
+
+      const question_url = process.env.QUESTION_SERVICE_URL;
+
       const response = await this.httpService
-        .post('http://host.docker.internal:8000/questions/collab', requestBody)
+        .post(`${question_url}/questions/collab`, requestBody)
         .toPromise();
 
       const newQuestion = response.data;
@@ -82,11 +96,13 @@ export class CollabService {
     matchId: string,
     difficulty: string,
     topic: string,
+    userIds: string[],
   ): Promise<any> {
     await this.collabRedisService.addCollabRecordToRedis(
       matchId,
       topic,
       difficulty,
+      userIds,
     );
 
     const initQuestion = await this.updateSessionQuestion(
@@ -122,13 +138,8 @@ export class CollabService {
     return data;
   }
 
-  async addUserIfAllowed(matchId: string, username: string): Promise<boolean> {
-    const isAllowed = await this.collabRedisService.addUserIfAllowed(
-      matchId,
-      username,
-    );
-
-    return true;
+  async addUser(matchId: string, username: string): Promise<void> {
+    await this.collabRedisService.addUser(matchId, username);
   }
 
   async updateSessionName(

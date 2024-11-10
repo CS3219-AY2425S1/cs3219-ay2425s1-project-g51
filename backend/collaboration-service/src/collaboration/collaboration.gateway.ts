@@ -19,7 +19,7 @@ dotenv.config();
     origin: process.env.WEBSOCKET_ORIGIN,
   },
   namespace: '/',
-  port: parseInt(process.env.WEBSOCKET_PORT, 10),
+  port: process.env.WEBSOCKET_PORT || 8080,
 })
 export class CollabGateway implements OnGatewayDisconnect {
   private readonly logger = new Logger(CollabGateway.name);
@@ -39,6 +39,10 @@ export class CollabGateway implements OnGatewayDisconnect {
   async handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected from collab service: ${client.id}`);
     const data = await this.collabService.getUserNameAndMatchId(client.id);
+
+    if (!data) {
+      return;
+    }
 
     await this.collabService.handleDisconnect(
       data.matchId,
@@ -75,23 +79,25 @@ export class CollabGateway implements OnGatewayDisconnect {
       this.logger.debug(
         `New socket joined: ${client.id} for user ${username} and session ${matchId}`,
       );
-      client.data.matchId = matchId;
 
-      await this.collabService.addUserIfAllowed(matchId, username);
-
-      await this.collabService.registerWSToSession(
+      const registerSuccess = await this.collabService.registerWSToSession(
         matchId,
         client.id,
         username,
       );
 
-      const sessionMetaData = await this.collabService.getOnloadData(matchId);
+      if (!registerSuccess) {
+        client.emit('invalidMatchId', { message: 'Not allowed.' });
+      } else {
+        await this.collabService.addUser(matchId, username);
+        const sessionMetaData = await this.collabService.getOnloadData(matchId);
 
-      const webSocketIds =
-        await this.collabService.getCollabSessionWebSockets(matchId);
+        const webSocketIds =
+          await this.collabService.getCollabSessionWebSockets(matchId);
 
-      for (const ids of webSocketIds) {
-        this.server.to(ids).emit('onloadData', sessionMetaData);
+        for (const ids of webSocketIds) {
+          this.server.to(ids).emit('onloadData', sessionMetaData);
+        }
       }
     } catch (error) {
       this.logger.error(`Error from client ${data.username}:`, error);

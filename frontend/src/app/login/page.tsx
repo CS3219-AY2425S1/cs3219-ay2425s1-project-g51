@@ -18,7 +18,7 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await loginUser(email, password);
+      const res: any = await loginUser(email, password);
       localStorage.setItem("token", res.data.accessToken); 
       router.push("./sessions");
     } catch (error: any) {

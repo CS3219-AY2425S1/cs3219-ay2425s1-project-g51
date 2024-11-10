@@ -12,13 +12,12 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectI
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from 'next/navigation';
-import { verifyToken } from '@/lib/api-user'
-import toast from 'react-hot-toast';
+import { executeCode, verifyToken } from '@/lib/api-user'
 import CodeEditorContainer from '@/components/collaboration/code-editor-container';
-import VideoDisplay from '@/components/collaboration/VideoDisplay';
+import { CodeExecutionResponse } from '@/app/api/code-execution/route';
 
 
 interface CollaborationPageProps {
@@ -79,6 +78,43 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
   const { control, handleSubmit, reset } = useForm<QuestionFormData>();
   const router = useRouter();
 
+  const [code, setCode] = useState<string>('');
+  const [language, setLanguage] = useState<string>('python');
+  const [executing, setExecuting] = useState<boolean>(false);
+  const [result, setResult] = useState<CodeExecutionResponse | null>(null);
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
+
+  interface TestResult {
+    testCaseNumber: number;
+    input: string;
+    expectedOutput: string;
+    actualOutput: string;
+    passed: boolean;
+    error?: string;
+    compilationError?: string | null;
+  }
+
+  
+  const handleExecuteCode = async (questionId: string) => {
+    setExecuting(true);
+    try {
+      const result: CodeExecutionResponse = await executeCode({
+        questionId,
+        language: "python",
+        code: code
+      });
+      setResult(result);
+      setTestResults(result.testResults);
+      if (result.testResults.some(test => test.error)) {
+        setError(result.testResults.find(test => test.error)?.error || 'Execution failed');
+      }
+    } catch (error) {
+      setError((error as any).message);
+    } finally {
+      setExecuting(false);
+    }
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem('token')
@@ -114,7 +150,6 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
         setDifficulty(data.difficulty);
         setTopic(data.topic);
         setFormError(null);
-        toast.success('New question loaded');
       }
     });
 
@@ -126,20 +161,27 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
       setError(data.message);
     });
 
+    newSocket.on('invalidMatchId', (data: {message: string;}) => {
+      // toast.error(data.message);
+      alert(`${data.message}`);
+      router.push('/sessions');
+    })
+
     newSocket.on('message', (data: MessageData) => {
       setMessages((prev) => [
         ...prev, data
       ])
       if (data.sender !== userData.username) {
-        toast(`${data.sender}: ${data.content}`, {
-          duration: 3000,
-          position: 'bottom-left',
-          style: {
-            background: '#333',
-            color: '#fff',
-          },
-          icon: '💬',
-        });
+        console.log('new message')
+        // toast(`${data.sender}: ${data.content}`, {
+        //   duration: 3000,
+        //   position: 'bottom-left',
+        //   style: {
+        //     background: '#333',
+        //     color: '#fff',
+        //   },
+        //   icon: '💬',
+        // });
       }
     })
 
@@ -149,17 +191,25 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
     });
 
     newSocket.on('onloadData', (data: OnloadData) => {
+      if (!data.question) {
+        // toast.error('No question for the selected paramters');
+        alert('No question for the selected paramters');
+        router.push('/sessions')
+      }
       setQuestion(data.question);
       setDifficulty(data.difficulty);
       setTopic(data.topic);
       setMessages(data.messages);
       setSessionName(data.sessionName);
       setEditedName(data.sessionName);
-      setJoinedUsers(data.joinedUsers);
+      const uniqueUsers = Array.from(new Set(data.joinedUsers));
+      setJoinedUsers(uniqueUsers);
     })
 
     newSocket.on('userList', (data: string[]) => {
-      setJoinedUsers(data)
+      const uniqueUsers = Array.from(new Set(data));
+      console.log(uniqueUsers);
+      setJoinedUsers(uniqueUsers);
     })
 
 
@@ -199,11 +249,28 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
     setIsEditing(true);
   };
 
-  const handleNameSubmit = () => {
+  const handleNameSubmit = async ()  => {
     setIsEditing(false);
     setSessionName(editedName);
 
     socket?.emit('updateSessionName', { newSessionName: editedName, matchId: matchId });
+    try {
+        const sessionId = matchId;
+        const response = await fetch(`/api/sessions/${sessionId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ sessionName: editedName }),
+        });
+    
+        if (!response.ok) {
+          const errorData = await response.json();
+        }
+    
+      } catch (error) {
+        console.error('Error updating session:', error);
+    }
   };
 
   const handleExitSession = () => {
@@ -405,10 +472,11 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
         <Tabs defaultValue="question" className="flex flex-col pb-1 overflow-hidden">
           <TabsList className="w-fit">
             <TabsTrigger value="question">Question</TabsTrigger>
+            {/* <TabsTrigger value="attempts">Attempts</TabsTrigger> */}
             <TabsTrigger value="feedback">Chat</TabsTrigger>
           </TabsList>
           <TabsContent value="question" className="flex-1 h-full overflow-hidden pb-1">
-            <Card className="flex flex-col mt-1 mb-4 h-3/4 overflow-hidden">
+            <Card className="flex flex-col mt-1 mb-4 h-full overflow-hidden">
               <div className="space-y-4 p-2 overflow-auto">
                 <CardHeader className="p-4">
                   <CardTitle className="text-2xl font-bold mb-2">{question?.title}</CardTitle>
@@ -420,7 +488,7 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
             </Card>
           </TabsContent>
           <TabsContent value="feedback" className="flex-1 pb-1 h-full overflow-hidden">
-            <Card className="p-2 mt-1 h-3/4 overflow-hidden">
+            <Card className="p-2 mt-1 h-full overflow-hidden">
               <div className="space-y-4 p-4 flex flex-col h-full overflow-hidden">
                 <div className="flex-1 overflow-y-auto">
                   {messages.map((msg, index) => (
@@ -462,117 +530,11 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
             </Card>
           </TabsContent>
         </Tabs>
-        <div className="flex flex-col gap-0 h-full overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden">
           <CodeEditorContainer sessionId={matchId} questionId={question?._id} userData={userData} />
-          <Card className="max-h-[40vh] overflow-auto pb-4 mb-1">
-            <CardHeader className="pb-1 pt-4 font-bold text-xl">Test Cases</CardHeader>
-            <CardContent className="flex-1 overflow-auto py-0">
-              <Tabs defaultValue="test-case-1">
-                <TabsList className="flex gap-2 justify-start w-fit">
-                  <TabsTrigger value="test-case-1">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      Case 1
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger value="test-case-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      Case 2
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger value="test-case-3">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      Case 3
-                    </div>
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="test-case-1">
-                  <Card>
-                    <CardContent className="flex flex-col gap-4 p-4">
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Input</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[2, 7, 11, 15], 9</pre>
-                      </div>
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Output</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[0, 1]</pre>
-                      </div>
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Expected Output</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[0, 1]</pre>
-                      </div>
-                      <div className="col-span-2">
-                        <CardDescription className="font-medium text-sm mb-1">Stdout</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">{`Initializing array: [2, 7, 11, 15]
-Target: 9
-Iterating through array...
-Found indices: [0, 1]
-`}</pre>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                <TabsContent value="test-case-2">
-                  <Card>
-                    <CardContent className="flex flex-col gap-4 p-4">
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Input</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[3, 2, 4], 6</pre>
-                      </div>
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Output</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[1, 2]</pre>
-                      </div>
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Expected Output</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[1, 2]</pre>
-                      </div>
-                      <div className="col-span-2">
-                        <CardDescription className="font-medium text-sm mb-1">Stdout</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">{`Initializing array: [3, 2, 4]
-Target: 6
-Iterating through array...
-Found indices: [1, 2]
-`}</pre>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                <TabsContent value="test-case-3">
-                  <Card>
-                    <CardContent className="flex flex-col gap-4 p-4">
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Input</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[3, 3], 6</pre>
-                      </div>
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Output</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[0, 1]</pre>
-                      </div>
-                      <div>
-                        <CardDescription className="font-medium text-sm mb-1">Expected Output</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">[0, 1]</pre>
-                      </div>
-                      <div className="col-span-2">
-                        <CardDescription className="font-medium text-sm mb-1">Stdout</CardDescription>
-                        <pre className="bg-muted p-2 rounded-md overflow-auto">{`Initializing array: [3, 3]
-Target: 6
-Iterating through array...
-Found indices: [0, 1]
-`}</pre>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 z-50">
-        <VideoDisplay sessionId={matchId} />
+      <div className="absolute bottom-0 left-0 w-1/3 h-1/4">
       </div>
     </div>
   )

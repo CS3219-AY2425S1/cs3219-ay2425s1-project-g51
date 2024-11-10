@@ -35,7 +35,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
     }
     try {
       setLoading(true);
-      const res = await verifyToken(token);
+      const res: any = await verifyToken(token);
       const userId = res.data.id;
       const userEmail = res.data.email;
       try {
@@ -47,7 +47,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ isOpen, onClose }) => {
       toast.success("Password updated successfully! Please login again.");
       localStorage.removeItem('token');
       router.push('/login');
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message || "Failed to update password!");
     } finally {
       setLoading(false);

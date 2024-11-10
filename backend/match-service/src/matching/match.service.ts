@@ -177,11 +177,6 @@ export class MatchService {
 
       const parseTopic =
         request1.topic.charAt(0).toUpperCase() + request1.topic.slice(1);
-      const collabRequestBody = {
-        topic: parseTopic,
-        difficulty: matchedPair.difficulty,
-      };
-      this.logger.debug(`collab request body: ${collabRequestBody}`);
 
       server.to(request1.socketId).emit('matchResult', {
         success: true,
@@ -199,9 +194,19 @@ export class MatchService {
         peerUserId: request1.userId,
       } as MatchResult);
 
+      const collabRequestBody = {
+        topic: parseTopic,
+        difficulty: matchedPair.difficulty,
+        userIds: [request1.userId, request2.userId],
+      };
+      this.logger.debug(`collab request body: ${collabRequestBody}`);
+
+      const collab_url = process.env.COLLAB_SERVICE_URL;
+      this.logger.log(`Public collab url: ${collab_url}`);
+
       const collabResponse = await this.httpService
         .post(
-          `http://host.docker.internal:3005/collaboration/create-session/${matchId}`,
+          `${collab_url}/collaboration/create-session/${matchId}`,
           collabRequestBody,
         )
         .toPromise();

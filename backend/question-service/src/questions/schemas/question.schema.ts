@@ -4,6 +4,11 @@ import { QuestionCategory, QuestionComplexity } from '../types/question.types';
 
 export type QuestionDocument = HydratedDocument<Question>;
 
+export interface TestCase {
+  input: string;
+  expectedOutput: string;
+}
+
 @Schema({ collection: 'questions', timestamps: true })
 export class Question {
   _id: Types.ObjectId;
@@ -27,6 +32,15 @@ export class Question {
     type: String,
     enum: QuestionComplexity,})
    complexity: QuestionComplexity;
+
+   @Prop({
+    type: [{
+      input: { type: String, required: true },
+      expectedOutput: { type: String, required: true },
+    }],
+    default: []
+  })
+  testCases: TestCase[];
 }
 
 export const QuestionSchema = SchemaFactory.createForClass(Question);

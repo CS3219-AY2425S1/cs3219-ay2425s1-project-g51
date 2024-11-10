@@ -74,7 +74,7 @@ export default function CreateSessionDialog({ sessions }: CreateSessionDialogPro
         return
       }
       try {
-        const res = await verifyToken(token)
+        const res: any = await verifyToken(token)
         setUserData({ username: res.data.username, email: res.data.email })
         setLoading(false)
       } catch (error) {
@@ -113,14 +113,23 @@ export default function CreateSessionDialog({ sessions }: CreateSessionDialogPro
 
         const date = new Date();
         const formattedDate = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        // sessions.push({
+        //   id: sessions.length + 1,
+        //   date: formattedDate,
+        //   title: 'Coding Session',
+        //   participants: [userData.username, data.peerUserId],
+        //   duration: '-',
+        //   questions: 0,
+        //   solved: 0
+        // })
         sessions.push({
-          id: sessions.length + 1,
-          date: formattedDate,
-          title: 'Coding Session',
-          participants: [userData.username, data.peerUserId],
-          duration: '-',
-          questions: 0,
-          solved: 0
+          _id: (sessions.length + 1).toString(),
+          sessionId: (sessions.length + 1).toString(),
+          activeUsers: [userData.username, data.peerUserId],
+          allUsers: [userData.username, data.peerUserId],
+          questionAttempts: [],
+          isCompleted: false,
+          sessionName: 'Coding Session'
         })
       } else if (!data.success) {
         setTimer(null);

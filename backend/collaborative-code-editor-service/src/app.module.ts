@@ -4,7 +4,9 @@ import { AppService } from './app.service';
 import { EditorModule } from './editor/editor.module';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import * as dotenv from 'dotenv';
 
+dotenv.config();
 
 @Module({
   imports: [

@@ -2,23 +2,33 @@ version: "3.9"
 
 services:
   question-service:
-    build: ./question-service
+    build: 
+      context: ./question-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 8000
     container_name: question-service-dev
     ports:
       - "8000:8000"
     volumes:
       - ./question-service:/usr/src/app
-      - /usr/src/app/node_modules 
+      - /usr/src/app/node_modules
     env_file:
       - ./question-service/.env
     environment:
       - NODE_ENV=development
+      - MONGODB_URI=mongodb+srv://maxng:W3tG21Sh3L7ONWe6@cluster0.pmoli.mongodb.net/questionDB?retryWrites=true&w=majority
+      - PORT=8000
     command: npm run start
     networks:
       - app-network
 
   user-service:
-    build: ./user-service
+    build: 
+      context: ./user-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3001
     container_name: user-service-dev
     ports:
       - "3001:3001"
@@ -29,6 +39,11 @@ services:
       - ./user-service/.env
     environment:
       - NODE_ENV=development
+      - DB_CLOUD_URI=mongodb+srv://admin:PeerPrepG51AdminUserService@cluster0.gaxdw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+      - DB_LOCAL_URI=mongodb://127.0.0.1:27017/peerprepUserServiceDB
+      - PORT=3001
+      - ENV=PROD
+      - JWT_SECRET=you-can-replace-this-with-your-own-secret
     command: npm start
     networks:
       - app-network
@@ -37,6 +52,8 @@ services:
     build:
       context: ./match-service
       dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3002
     container_name: match-service-dev
     ports:
       - "3002:3002"
@@ -47,8 +64,11 @@ services:
       - ./match-service/.env
     environment:
       - NODE_ENV=development
+      - WEBSOCKET_ORIGIN=*
+      - WEBSOCKET_PORT=3002
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - COLLAB_SERVICE_URL=http://host.docker.internal:3005
     command: npm run start:dev
     depends_on:
       redis:
@@ -57,7 +77,11 @@ services:
       - app-network
 
   collab-service:
-    build: ./collaboration-service
+    build: 
+      context: ./collaboration-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3005
     container_name: collab-service-dev
     ports:
       - "3005:3005"
@@ -68,12 +92,89 @@ services:
       - ./collaboration-service/.env
     environment:
       - NODE_ENV=development
+      - WEBSOCKET_ORIGIN=*
+      - WEBSOCKET_PORT=3005
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - QUESTION_SERVICE_URL=http://host.docker.internal:8000
     command: npm run start:dev
     depends_on:
       redis:
         condition: service_healthy
+    networks:
+      - app-network
+    
+  code-execution-service:
+    build: 
+      context: ./code-execution-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 9001
+    container_name: code-execution-service-dev
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./code-execution-service:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PISTON_API_URL=https://emkc.org/api/v2/piston
+      - QUESTION_SERVICE_URL=http://host.docker.internal:8000
+      - PORT=9001
+    command: npm run start:dev
+    depends_on:
+      redis:
+        condition: service_healthy
+      question-service:
+        condition: service_started
+    networks:
+      - app-network
+
+  collaborative-code-editor-service:
+    build: 
+      context: ./collaborative-code-editor-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3006
+    container_name: collaborative-code-editor-service-dev
+    ports:
+      - "3006:3006"
+    volumes:
+      - ./collaborative-code-editor-service:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./collaborative-code-editor-service/.env
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PORT=3006
+    command: npm run start:dev
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  video-call-service:
+    build:
+      context: ./video-call-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3004
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./video-call-service:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./video-call-service/.env
+    environment:
+      - AGORA_APP_ID=5241deabef6346ecac8f75a62ec938fd
+      - AGORA_APP_CERTIFICATE=a0211a43bf3543a09dd84fa07d36cfad
+      - PORT=3004
+    restart: unless-stopped
     networks:
       - app-network
 

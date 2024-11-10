@@ -12,6 +12,7 @@ import { WebSocketKeyDto } from 'src/collaboration/dto/websocket-key.dto';
 export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
   private readonly redis: Redis;
   private readonly logger = new Logger(CollabRedisService.name);
+  private readonly EXPIRATION_MS = 864000;
 
   constructor() {
     this.redis = new Redis({
@@ -36,7 +37,7 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getCollabSessionData(matchId: string): Promise<any> {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     const data = await this.redis.get(key);
     this.logger.log(`data from collab redis of matchId ${matchId}: ${data}`);
 
@@ -47,8 +48,9 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
     matchId: string,
     topic: string,
     difficulty: string,
+    userIds: string[],
   ): Promise<void> {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     const value = {
       question: null,
       webSockets: [],
@@ -58,10 +60,10 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
       messages: [],
       sessionName: 'Coding Session',
       joinedUsers: [],
-      allowedUsers: [],
+      allowedUsers: userIds,
     };
 
-    await this.redis.set(key, JSON.stringify(value));
+    await this.redis.set(key, JSON.stringify(value), 'EX', this.EXPIRATION_MS);
     const data = await this.redis.get(key);
     this.logger.log(`added record ${data}`);
   }
@@ -92,25 +94,41 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
     topic: string,
     difficulty: string,
   ): Promise<void> {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     const value = await this.getCollabSessionData(matchId);
     if (value) {
       value.question = newQuestion;
       value.topic = topic;
       value.difficulty = difficulty;
       value.questionIds.push(newQuestion._id);
-      await this.redis.set(key, JSON.stringify(value));
+      await this.redis.set(
+        key,
+        JSON.stringify(value),
+        'EX',
+        this.EXPIRATION_MS,
+      );
     }
   }
 
-  async addWebSocketId(matchId: string, websocketId: string): Promise<void> {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+  async addWebSocketId(matchId: string, websocketId: string, username:string): Promise<boolean> {
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     const value = await this.getCollabSessionData(matchId);
 
     if (value) {
-      value.webSockets.push(websocketId);
-      await this.redis.set(key, JSON.stringify(value));
+      if (value.allowedUsers.includes(username)) {
+        value.webSockets.push(websocketId);
+        await this.redis.set(
+          key,
+          JSON.stringify(value),
+          'EX',
+          this.EXPIRATION_MS,
+        );
+        return true;
+      }
+      this.logger.warn(`${username} is not allowed to join ${matchId}`);
     }
+
+    return false;
   }
 
   async getCollabSessionWebSocketIds(matchId: string): Promise<string[]> {
@@ -121,18 +139,23 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async endSession(matchId: string): Promise<void> {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     await this.redis.del(key);
   }
 
   async updateMessage(matchId: string, messageData: any) {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     const value = await this.getCollabSessionData(matchId);
     if (value) {
       this.logger.debug(messageData);
       value.messages.push(messageData);
       this.logger.debug(`New message pushed ${value}`);
-      await this.redis.set(key, JSON.stringify(value));
+      await this.redis.set(
+        key,
+        JSON.stringify(value),
+        'EX',
+        this.EXPIRATION_MS,
+      );
     }
   }
 
@@ -141,17 +164,26 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
     webSocketId: string,
     username: string,
   ): Promise<void> {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     const value = await this.getCollabSessionData(matchId);
     if (value) {
       value.webSockets = value.webSockets.filter(
         (id: any) => id !== webSocketId,
       );
-      value.joinedUsers = value.joinedUsers.filter(
-        (name: any) => name !== username,
+      const index = value.joinedUsers.findIndex(
+        (name: any) => name === username,
       );
+      value.joinedUsers = [
+        ...value.joinedUsers.slice(0, index),
+        ...value.joinedUsers.slice(index + 1),
+      ];
       this.logger.debug(value.webSockets);
-      await this.redis.set(key, JSON.stringify(value));
+      await this.redis.set(
+        key,
+        JSON.stringify(value),
+        'EX',
+        this.EXPIRATION_MS,
+      );
     }
     const webSocketKey = `${REDIS_CONFIG.keys.sessionWebSocket}:${webSocketId}`;
     await this.redis.del(webSocketKey);
@@ -171,26 +203,35 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
     return initData;
   }
 
-  async addUserIfAllowed(matchId: string, username: string): Promise<boolean> {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+  async addUser(matchId: string, username: string): Promise<void> {
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     const value = await this.getCollabSessionData(matchId);
     if (true) {
       value.joinedUsers.push(username);
-      await this.redis.set(key, JSON.stringify(value));
+      await this.redis.set(
+        key,
+        JSON.stringify(value),
+        'EX',
+        this.EXPIRATION_MS,
+      );
     }
 
-    return true;
   }
 
   async updateSessionName(
     newSessionName: string,
     matchId: string,
   ): Promise<void> {
-    const key = `${REDIS_CONFIG.keys.sessionQuestion}:${matchId}`;
+    const key = `${REDIS_CONFIG.keys.sessionData}:${matchId}`;
     const value = await this.getCollabSessionData(matchId);
     if (value) {
       value.sessionName = newSessionName;
-      await this.redis.set(key, JSON.stringify(value));
+      await this.redis.set(
+        key,
+        JSON.stringify(value),
+        'EX',
+        this.EXPIRATION_MS,
+      );
     }
   }
 
@@ -199,7 +240,12 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
     webSocketDTO: WebSocketKeyDto,
   ): Promise<void> {
     const key = `${REDIS_CONFIG.keys.sessionWebSocket}:${id}`;
-    await this.redis.set(key, JSON.stringify(webSocketDTO));
+    await this.redis.set(
+      key,
+      JSON.stringify(webSocketDTO),
+      'EX',
+      this.EXPIRATION_MS,
+    );
     const data = await this.redis.get(key);
     this.logger.log(`added record ${data}`);
   }
@@ -208,7 +254,7 @@ export class CollabRedisService implements OnModuleInit, OnModuleDestroy {
     const key = `${REDIS_CONFIG.keys.sessionWebSocket}:${webSocketId}`;
     const data = await this.redis.get(key);
 
-    return JSON.parse(data);
+    return data ? JSON.parse(data) : null;
   }
 
   async getJoinedUsers(matchId: string): Promise<any> {

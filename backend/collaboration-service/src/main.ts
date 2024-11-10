@@ -16,6 +16,6 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  await app.listen(3005);
+  await app.listen(process.env.WEBSOCKET_PORT || 8080);
 }
 bootstrap();

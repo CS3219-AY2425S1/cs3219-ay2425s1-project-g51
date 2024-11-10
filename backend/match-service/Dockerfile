@@ -1,8 +1,10 @@
 ARG NODE_VERSION=18.20.4
 
-FROM node:${NODE_VERSION}-alpine as base
+FROM node:${NODE_VERSION}-alpine AS base
 
 WORKDIR /usr/src/app
+
+ENV HOST=0.0.0.0
 
 COPY package*.json ./
 
@@ -10,6 +12,6 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3002
+EXPOSE 8080
 
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "start"]

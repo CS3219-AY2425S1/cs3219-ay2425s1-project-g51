@@ -8,7 +8,7 @@ To run the frontend, follow the below steps
 ```
 cd frontend
 ```
-2) Create a .env.local file and add NEXT_PUBLIC_API_URL=http://localhost:8000
+2) Create a .env.local file
 3) Run the frontend locally
 ```
 npm run dev
