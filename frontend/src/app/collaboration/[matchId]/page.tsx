@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { executeCode, verifyToken } from '@/lib/api-user'
 import CodeEditorContainer from '@/components/collaboration/code-editor-container';
 import { CodeExecutionResponse } from '@/app/api/code-execution/route';
+import VideoContainer from '@/components/video-call/VideoContainer';
 
 
 interface CollaborationPageProps {
@@ -535,6 +536,7 @@ const CollaborationPage: FC<CollaborationPageProps> = ({ params }) => {
         </div>
       </div>
       <div className="absolute bottom-0 left-0 w-1/3 h-1/4">
+        <VideoContainer sessionId={matchId} username={userData.username} />
       </div>
     </div>
   )
