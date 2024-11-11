@@ -9,7 +9,7 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   });
   app.useGlobalPipes(new ValidationPipe());
-  await app.listen(8000);
+  await app.listen(process.env.PORT || 8080);
 }
 
 bootstrap();

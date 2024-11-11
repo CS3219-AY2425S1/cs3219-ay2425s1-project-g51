@@ -18,4 +18,8 @@ export class CreateQuestionDto {
 
   @IsEnum(QuestionComplexity)
   complexity: QuestionComplexity;
+
+  @IsArray()
+  testCases: { input: string; expectedOutput: string }[];
+  
 }

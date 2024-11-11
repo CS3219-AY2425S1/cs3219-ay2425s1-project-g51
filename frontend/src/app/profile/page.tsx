@@ -31,12 +31,12 @@ export default function ProfilePage() {
         return
       }
       try {
-        const res = await verifyToken(token)
+        const res: any = await verifyToken(token)
         const fetchedData = { id: res.data.id, username: res.data.username, email: res.data.email };
         setUserData(fetchedData);
         setOriginalUserData(fetchedData);
         setLoading(false)
-      } catch (error) {
+      } catch (error: any) {
         toast.error(error.message || 'User verification failed, please login again!')
         router.push('/login')
       }

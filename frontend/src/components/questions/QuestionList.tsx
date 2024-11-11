@@ -39,9 +39,9 @@ export default function QuestionList({ questionsPromise}: QuestionListProps) {
           return
         }
         try {
-          const res = await verifyToken(token)
+          const res: any = await verifyToken(token)
           setIsAdmin(res.data.isAdmin)
-        } catch (error) {
+        } catch (error: any) {
           toast.error(error.message || 'User verification failed, please login again!')
           router.push('/login')
         }

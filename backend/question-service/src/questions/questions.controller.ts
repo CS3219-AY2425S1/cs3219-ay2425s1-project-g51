@@ -17,17 +17,37 @@ import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question } from './schemas/question.schema';
 import { QuestionCategory, QuestionComplexity } from './types/question.types';
 import { FilterQuestionDto } from './dto/filter-question.dto';
+import { CollabQuestionDto } from './dto/collab-question.dto';
 
 @Controller('questions')
 export class QuestionsController {
   constructor(private readonly questionsService: QuestionsService) {}
 
   @Post()
-  async create(@Body() createQuestionDto: CreateQuestionDto): Promise<Question> {
+  async create(
+    @Body() createQuestionDto: CreateQuestionDto,
+  ): Promise<Question> {
     try {
       return await this.questionsService.create(createQuestionDto);
     } catch (error) {
       throw new InternalServerErrorException(`Failed to create question`);
+    }
+  }
+
+  @Post('collab')
+  async findQuestionByCriteria(
+    @Body() collabQuestionDto: CollabQuestionDto,
+  ): Promise<Question | null> {
+    try {
+      return await this.questionsService.findCollabQuestion(collabQuestionDto);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return null;
+      }
+
+      throw new InternalServerErrorException(
+        'Failed to fetch question for collaboration.',
+      );
     }
   }
 

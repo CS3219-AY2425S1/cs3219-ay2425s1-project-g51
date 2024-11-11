@@ -29,6 +29,7 @@ interface MatchResult {
   message: string;
   peerUserId?: string;
   difficulty?: string;
+  matchId?: string;
 }
 
 interface CreateSessionDialogProps {
@@ -56,6 +57,7 @@ export default function CreateSessionDialog({ sessions }: CreateSessionDialogPro
   const [socket, setSocket] = useState<Socket | null>(null);
   const [shouldRedirect, setShouldRedirect] = useState(false);
   const [matchedUser, setMatchedUser] = useState<string>('');
+  const [matchId, setMatchId] = useState<string>('');
   const [difficultyMatched, setDifficultyMatched] = useState<string>('');
   const [userData, setUserData] = useState({
     username: "",
@@ -72,7 +74,7 @@ export default function CreateSessionDialog({ sessions }: CreateSessionDialogPro
         return
       }
       try {
-        const res = await verifyToken(token)
+        const res: any = await verifyToken(token)
         setUserData({ username: res.data.username, email: res.data.email })
         setLoading(false)
       } catch (error) {
@@ -105,16 +107,29 @@ export default function CreateSessionDialog({ sessions }: CreateSessionDialogPro
         setRedirectTimer(5);
         setMatchedUser(data.peerUserId);
         setDifficultyMatched(data.difficulty)
+        if (data.matchId) {
+          setMatchId(data.matchId);
+        }
+
         const date = new Date();
         const formattedDate = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        // sessions.push({
+        //   id: sessions.length + 1,
+        //   date: formattedDate,
+        //   title: 'Coding Session',
+        //   participants: [userData.username, data.peerUserId],
+        //   duration: '-',
+        //   questions: 0,
+        //   solved: 0
+        // })
         sessions.push({
-          id: sessions.length + 1,
-          date: formattedDate,
-          title: 'Coding Session',
-          participants: [userData.username, data.peerUserId],
-          duration: '-',
-          questions: 0,
-          solved: 0
+          _id: (sessions.length + 1).toString(),
+          sessionId: (sessions.length + 1).toString(),
+          activeUsers: [userData.username, data.peerUserId],
+          allUsers: [userData.username, data.peerUserId],
+          questionAttempts: [],
+          isCompleted: false,
+          sessionName: 'Coding Session'
         })
       } else if (!data.success) {
         setTimer(null);
@@ -162,9 +177,11 @@ export default function CreateSessionDialog({ sessions }: CreateSessionDialogPro
 
   useEffect(() => {
     if (shouldRedirect) {
-      router.push('/collaboration');
+      router.push(
+        `/collaboration/${matchId}`
+      );
     }
-  }, [shouldRedirect, router]);
+  }, [shouldRedirect, router, matchId]);
 
   const resetState = () => {
     setStatus('idle');

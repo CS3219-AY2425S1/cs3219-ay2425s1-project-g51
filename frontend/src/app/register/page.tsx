@@ -28,7 +28,6 @@ const RegisterPage = () => {
       return;
     }
     try {
-      const data = await registerUser(formData);
       router.push("/login");
     } catch (error: any) {
       toast.error(error.message || "An error occurred during registration");

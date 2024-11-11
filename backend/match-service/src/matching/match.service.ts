@@ -6,6 +6,7 @@ import { MatchedPairDto } from './dto/matched-pair.dto';
 import { MatchResult } from './interfaces/match-result.interface';
 import { v4 as uuidv4 } from 'uuid';
 import { QuestionComplexity } from './types/question.types';
+import { HttpService } from '@nestjs/axios';
 
 @Injectable()
 export class MatchService {
@@ -13,7 +14,10 @@ export class MatchService {
   private readonly MATCH_TIMEOUT = 30000;
   private readonly SAME_DIFFICULTY_TIMEOUT = 20000;
 
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly httpService: HttpService,
+  ) {}
 
   async handleMatchRequest(matchRequest: MatchRequestDto, client: Socket) {
     try {
@@ -23,7 +27,8 @@ export class MatchService {
         socketId: client.id,
       };
 
-      const hasActiveRequest = await this.redisService.checkUserHasActiveRequest(request.userId);
+      const hasActiveRequest =
+        await this.redisService.checkUserHasActiveRequest(request.userId);
       if (hasActiveRequest) {
         client.emit('matchResult', {
           success: false,
@@ -38,12 +43,15 @@ export class MatchService {
 
       setTimeout(async () => {
         try {
-          const hasRequest = await this.redisService.checkRequestExists(request.userId, request.timestamp);
+          const hasRequest = await this.redisService.checkRequestExists(
+            request.userId,
+            request.timestamp,
+          );
           if (!hasRequest) return;
           this.logger.log(`Match request timed out: ${request.userId}`);
 
           await this.redisService.removeMatchRequest(request.userId);
-          
+
           client.emit('matchResult', {
             success: false,
             message: 'No match found within the timeout period',
@@ -52,7 +60,6 @@ export class MatchService {
           this.logger.error('Error handling match timeout:', error);
         }
       }, this.MATCH_TIMEOUT);
-
     } catch (error) {
       this.logger.error('Error handling match request:', error);
       client.emit('matchResult', {
@@ -62,14 +69,20 @@ export class MatchService {
     }
   }
 
-  private async findMatch(request: MatchRequestDto & { socketId: string }, client: Socket) {
+  private async findMatch(
+    request: MatchRequestDto & { socketId: string },
+    client: Socket,
+  ) {
     try {
-      const potentialMatches = await this.redisService.findPotentialMatches(request.topic, request.userId);
+      const potentialMatches = await this.redisService.findPotentialMatches(
+        request.topic,
+        request.userId,
+      );
       potentialMatches.sort((a, b) => a.timestamp - b.timestamp);
-      
+
       if (potentialMatches.length !== 0) {
         const exactMatch = potentialMatches.find(
-          match => match.difficulty === request.difficulty
+          (match) => match.difficulty === request.difficulty,
         );
 
         if (exactMatch) {
@@ -77,7 +90,8 @@ export class MatchService {
           return;
         }
 
-        const timeToExpiry = this.MATCH_TIMEOUT - (Date.now() - potentialMatches[0].timestamp);
+        const timeToExpiry =
+          this.MATCH_TIMEOUT - (Date.now() - potentialMatches[0].timestamp);
         if (timeToExpiry < this.MATCH_TIMEOUT - this.SAME_DIFFICULTY_TIMEOUT) {
           await this.createMatch(request, potentialMatches[0], client);
           return;
@@ -85,13 +99,19 @@ export class MatchService {
       }
 
       setTimeout(async () => {
-        const hasRequest = await this.redisService.checkRequestExists(request.userId, request.timestamp);
+        const hasRequest = await this.redisService.checkRequestExists(
+          request.userId,
+          request.timestamp,
+        );
         if (!hasRequest) return;
         this.logger.log(`SAME DIFFICULTY TIMEOUT invoked: ${request.userId}`);
 
-        const updatedMatches = await this.redisService.findPotentialMatches(request.topic, request.userId);
+        const updatedMatches = await this.redisService.findPotentialMatches(
+          request.topic,
+          request.userId,
+        );
         const newExactMatch = updatedMatches.find(
-          match => match.difficulty === request.difficulty
+          (match) => match.difficulty === request.difficulty,
         );
 
         if (newExactMatch) {
@@ -101,18 +121,26 @@ export class MatchService {
           await this.createMatch(request, updatedMatches[0], client);
         }
       }, this.SAME_DIFFICULTY_TIMEOUT);
-
     } catch (error) {
       this.logger.error('Error finding match:', error);
     }
   }
 
-  private getMinimumDifficulty(difficulty1: QuestionComplexity, difficulty2: QuestionComplexity) {
+  private getMinimumDifficulty(
+    difficulty1: QuestionComplexity,
+    difficulty2: QuestionComplexity,
+  ) {
     if (difficulty1 === difficulty2) {
       return difficulty1;
-    } else if (difficulty1 === QuestionComplexity.EASY || difficulty2 === QuestionComplexity.EASY) {
+    } else if (
+      difficulty1 === QuestionComplexity.EASY ||
+      difficulty2 === QuestionComplexity.EASY
+    ) {
       return QuestionComplexity.EASY;
-    } else if (difficulty1 === QuestionComplexity.MEDIUM || difficulty2 === QuestionComplexity.MEDIUM) {
+    } else if (
+      difficulty1 === QuestionComplexity.MEDIUM ||
+      difficulty2 === QuestionComplexity.MEDIUM
+    ) {
       return QuestionComplexity.MEDIUM;
     }
     return QuestionComplexity.HARD;
@@ -137,13 +165,19 @@ export class MatchService {
         },
         topic: request1.topic,
         timestamp: Date.now(),
-        difficulty: this.getMinimumDifficulty(request1.difficulty, request2.difficulty),
+        difficulty: this.getMinimumDifficulty(
+          request1.difficulty,
+          request2.difficulty,
+        ),
       };
 
       await this.redisService.createMatch(matchedPair);
 
       const server = global.io;
-      
+
+      const parseTopic =
+        request1.topic.charAt(0).toUpperCase() + request1.topic.slice(1);
+
       server.to(request1.socketId).emit('matchResult', {
         success: true,
         message: 'Match found!',
@@ -160,8 +194,28 @@ export class MatchService {
         peerUserId: request1.userId,
       } as MatchResult);
 
-      this.logger.log(`Match created: ${matchedPair.user1.userId} and ${matchedPair.user2.userId} in ${matchedPair.difficulty} difficulty and ${matchedPair.topic}`);
+      const collabRequestBody = {
+        topic: parseTopic,
+        difficulty: matchedPair.difficulty,
+        userIds: [request1.userId, request2.userId],
+      };
+      this.logger.debug(`collab request body: ${collabRequestBody}`);
 
+      const collab_url = process.env.COLLAB_SERVICE_URL;
+      this.logger.log(`Public collab url: ${collab_url}`);
+
+      const collabResponse = await this.httpService
+        .post(
+          `${collab_url}/collaboration/create-session/${matchId}`,
+          collabRequestBody,
+        )
+        .toPromise();
+
+      this.logger.log(`Collab endpoint called: ${collabResponse}`);
+
+      this.logger.log(
+        `Match created: ${matchedPair.user1.userId} and ${matchedPair.user2.userId} in ${matchedPair.difficulty} difficulty and ${matchedPair.topic}`,
+      );
     } catch (error) {
       this.logger.error('Error creating match:', error);
     }
