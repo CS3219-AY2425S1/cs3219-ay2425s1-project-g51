@@ -147,7 +147,8 @@ export default function SessionsPage() {
 
   const filteredSessions = sessions.filter(session =>
     session.allUsers.includes(userData.username)
-  );
+  ).reverse();
+
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -212,10 +213,8 @@ function renderYearSessions(year: number, sessions: Session[], userNames: { [key
                   <div className="flex flex-wrap items-center justify-between gap-4 px-4">
                     <div className="flex items-center space-x-4 gap-6">
                       <div className="text-center">
-                      <div className="text-2xl font-bold">{session.questionAttempts[0].startedAt ? new Date(session.questionAttempts[0].startedAt).getDate() : 'N/A'}</div>
-                      <div className="text-sm text-muted-foreground">{session.questionAttempts[0].startedAt ? new Date(session.questionAttempts[0].startedAt).toLocaleString('default', { month: 'short' }) : 'N/A'}</div>
-                        {/* <div className="text-2xl font-bold">{new Date(session.questionAttempts[0].startedAt).getDate()}</div>
-                        <div className="text-sm text-muted-foreground">{new Date(session.questionAttempts[0].startedAt).toLocaleString('default', { month: 'short' })}</div> */}
+                      <div className="text-2xl font-bold">{session.questionAttempts.length > 0 && session.questionAttempts[0].startedAt ? new Date(session.questionAttempts[0].startedAt).getDate() : 'N/A'}</div>
+                      <div className="text-sm text-muted-foreground">{session.questionAttempts.length > 0 && session.questionAttempts[0].startedAt ? new Date(session.questionAttempts[0].startedAt).toLocaleString('default', { month: 'short' }) : 'N/A'}</div>
                       </div>
                       <div>
                         <h4 className="text-lg font-semibold">{session.sessionName}</h4>
