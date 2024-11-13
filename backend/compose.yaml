@@ -17,8 +17,6 @@ services:
       - ./question-service/.env
     environment:
       - NODE_ENV=development
-      - MONGODB_URI=mongodb+srv://maxng:W3tG21Sh3L7ONWe6@cluster0.pmoli.mongodb.net/questionDB?retryWrites=true&w=majority
-      - PORT=8000
     command: npm run start
     networks:
       - app-network
@@ -39,11 +37,6 @@ services:
       - ./user-service/.env
     environment:
       - NODE_ENV=development
-      - DB_CLOUD_URI=mongodb+srv://admin:PeerPrepG51AdminUserService@cluster0.gaxdw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-      - DB_LOCAL_URI=mongodb://127.0.0.1:27017/peerprepUserServiceDB
-      - PORT=3001
-      - ENV=PROD
-      - JWT_SECRET=you-can-replace-this-with-your-own-secret
     command: npm start
     networks:
       - app-network
@@ -64,11 +57,6 @@ services:
       - ./match-service/.env
     environment:
       - NODE_ENV=development
-      - WEBSOCKET_ORIGIN=*
-      - WEBSOCKET_PORT=3002
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - COLLAB_SERVICE_URL=http://host.docker.internal:3005
     command: npm run start:dev
     depends_on:
       redis:
@@ -92,11 +80,6 @@ services:
       - ./collaboration-service/.env
     environment:
       - NODE_ENV=development
-      - WEBSOCKET_ORIGIN=*
-      - WEBSOCKET_PORT=3005
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - QUESTION_SERVICE_URL=http://host.docker.internal:8000
     command: npm run start:dev
     depends_on:
       redis:
@@ -116,13 +99,10 @@ services:
     volumes:
       - ./code-execution-service:/usr/src/app
       - /usr/src/app/node_modules
+    env_file:
+      - ./code-execution-service/.env
     environment:
       - NODE_ENV=development
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PISTON_API_URL=https://emkc.org/api/v2/piston
-      - QUESTION_SERVICE_URL=http://host.docker.internal:8000
-      - PORT=9001
     command: npm run start:dev
     depends_on:
       redis:
@@ -148,9 +128,6 @@ services:
       - ./collaborative-code-editor-service/.env
     environment:
       - NODE_ENV=development
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - PORT=3006
     command: npm run start:dev
     depends_on:
       - redis
