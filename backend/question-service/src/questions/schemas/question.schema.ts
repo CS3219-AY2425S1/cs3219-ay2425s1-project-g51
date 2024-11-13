@@ -13,7 +13,7 @@ export interface TestCase {
 export class Question {
   _id: Types.ObjectId;
 
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   title: string;
 
   @Prop({ required: true })
@@ -34,11 +34,11 @@ export class Question {
    complexity: QuestionComplexity;
 
    @Prop({
+    required: true,
     type: [{
       input: { type: String, required: true },
       expectedOutput: { type: String, required: true },
     }],
-    default: []
   })
   testCases: TestCase[];
 }
