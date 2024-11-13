@@ -4,7 +4,7 @@ import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { CalendarIcon, FileQuestionIcon } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import CreateSessionDialog from '@/components/CreateSessionDialog'
+import CreateSessionDialog from '@/components/sessions/CreateSessionDialog'
 import { useRouter } from 'next/navigation'
 import { verifyToken } from '@/lib/api-user'
 
