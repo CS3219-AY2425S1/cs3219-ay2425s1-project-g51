@@ -1,0 +1,157 @@
+version: "3.9"
+
+services:
+  question-service:
+    build: 
+      context: ./question-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 8000
+    container_name: question-service-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./question-service:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./question-service/.env
+    environment:
+      - NODE_ENV=development
+    command: npm run start
+    networks:
+      - app-network
+
+  user-service:
+    build: 
+      context: ./user-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3001
+    container_name: user-service-dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./user-service:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./user-service/.env
+    environment:
+      - NODE_ENV=development
+    command: npm start
+    networks:
+      - app-network
+
+  match-service:
+    build:
+      context: ./match-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3002
+    container_name: match-service-dev
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./match-service:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./match-service/.env
+    environment:
+      - NODE_ENV=development
+    command: npm run start:dev
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  collab-service:
+    build: 
+      context: ./collaboration-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3005
+    container_name: collab-service-dev
+    ports:
+      - "3005:3005"
+    volumes:
+      - ./collaboration-service:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./collaboration-service/.env
+    environment:
+      - NODE_ENV=development
+    command: npm run start:dev
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    
+  code-execution-service:
+    build: 
+      context: ./code-execution-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 9001
+    container_name: code-execution-service-dev
+    ports:
+      - "9001:9001"
+    volumes:
+      - ./code-execution-service:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./code-execution-service/.env
+    environment:
+      - NODE_ENV=development
+    command: npm run start:dev
+    depends_on:
+      redis:
+        condition: service_healthy
+      question-service:
+        condition: service_started
+    networks:
+      - app-network
+
+  collaborative-code-editor-service:
+    build: 
+      context: ./collaborative-code-editor-service
+      dockerfile: Dockerfile
+      args:
+        EXPOSE_PORT: 3006
+    container_name: collaborative-code-editor-service-dev
+    ports:
+      - "3006:3006"
+    volumes:
+      - ./collaborative-code-editor-service:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - ./collaborative-code-editor-service/.env
+    environment:
+      - NODE_ENV=development
+    command: npm run start:dev
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  redis_data:

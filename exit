@@ -1,0 +1,137 @@
+[33m35a04dcc[m[33m ([m[1;36mHEAD -> [m[1;32mquestion-history-collab[m[33m)[m Create Session history list based on questionhistories db - to change to redis
+[33mae9d848e[m Create attempt history tab in session
+[33m0e4d09a8[m resolved merge conflict
+[33m3968f06f[m[33m ([m[1;31morigin/dev/question-service-get-question[m[33m, [m[1;32mcollab-service[m[33m)[m Update to show ui changes
+[33me6ab4ce3[m[33m ([m[1;31morigin/dev/question-history-service[m[33m, [m[1;32mquestion-history[m[33m)[m Change naming to question-submission
+[33mf3ea8956[m Change naming to question-submission
+[33mb0984e5a[m Update frontend to test collab service
+[33m7c2524ac[m Dockerise collab service
+[33mdfce4941[m Implement base collaboration service
+[33md08d0e80[m Update frontend to pass matchId
+[33mdfe388a4[m Add error handling and find single attempt method
+[33mbfecbafd[m Create endpoint for fetching question for collab
+[33med19cf07[m Create update question history api
+[33mebdd3f7b[m Add error handling and update API
+[33m72c90cf5[m Set up api endpoint for question history
+[33m7a84f1f6[m[33m ([m[1;33mtag: Milestone-D4[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Merge pull request #28 from CS3219-AY2425S1/staging
+[33mff501c3b[m[33m ([m[1;31morigin/staging[m[33m)[m Merge pull request #27 from CS3219-AY2425S1/dev/matching-service
+[33m746fcde9[m[33m ([m[1;31morigin/dev/matching-service[m[33m)[m Improve error messages
+[33m4ba5ae75[m Update error handling
+[33m03eb360c[m Merge branch 'dev/user-service' into dev/matching-service
+[33m4efb5f06[m[33m ([m[1;31morigin/dev/user-service[m[33m)[m Fix bugs in update profile details
+[33mefd2f685[m Update user profile icon
+[33md15b7673[m Updates error messages
+[33m8a3ed050[m Add error messages
+[33me78a15c0[m Disable unauthorised acccess & add rerouting on updating user data
+[33m2695380f[m Remove env file
+[33m65e718c8[m Remove node_modules
+[33m511128a4[m Remove node_modules
+[33m9fa296af[m Update new session on sessions page
+[33m06941e7f[m Update settings pop-up UI
+[33m6a4b7b07[m Integrate settings functionality with backend
+[33m4d8c5b86[m Add log messages, fix dotenv
+[33m0f2711f4[m Remove console log
+[33mddf7245b[m Fix bug
+[33m38df1eb0[m Remove forgot password option
+[33mc2225253[m Integrate profile edit functionality with backend
+[33mb372166f[m Fix UI bug in QuestionsList
+[33m32a48f4b[m Fix import errors & remove AppHeader from login and register
+[33m32c4cd2b[m Reorganize components folder
+[33mcda7f836[m Integrate user-service with matching-service
+[33maa15b913[m Merge branch 'dev/user-service' into dev/matching-service
+[33m43f126fa[m[33m ([m[1;31morigin/dev/user-service-frontend[m[33m)[m Enable logging out & integrate user-service with questions page
+[33m92079d8c[m Remove console.logs
+[33mbaeb8980[m Disable cancel button when match is successful
+[33m4e22a6c5[m Remove test frontend files
+[33m0afcbf3a[m Fix timer
+[33m87ebca33[m fix difficulty display bug
+[33m046b9f09[m Merge branch 'dev/matching-service-backend' into dev/matching-service-frontend-integrate-backend
+[33md6fa6cf6[m Move websocket url to env file
+[33m7a86fd1a[m[33m ([m[1;31morigin/dev/matching-service-backend[m[33m)[m Dockerize match service
+[33m1dec9a9c[m Modify ui to redirect to session page
+[33mc2944a63[m Remove AppHeader from login and register pages
+[33m86bbce10[m Integrate with backend routes for register and login
+[33m7f5bdaa0[m Integrate with backend changes
+[33m6461fdbf[m Fix bug
+[33mea574131[m Merge branch 'dev/matching-service-backend' into dev/matching-service-frontend-integrate-backend
+[33mbcbcf8ef[m Switch to redis and implement matching service
+[33m294352c6[m Integrate backend changes
+[33mfb9168e6[m Merge branch 'dev/matching-service-backend' into dev/matching-service-frontend-integrate-backend
+[33m7b6aa712[m Add UI for login and register pages
+[33m5e87f4b2[m Add settings pop-up
+[33m81a067c6[m Add mock ui for profile page
+[33m3790055e[m Add profile dropdown in AppHeader
+[33mbda2b574[m[33m ([m[1;31morigin/dev/matching-service-frontend[m[33m)[m Add start session dialog
+[33ma1af5514[m Use react-hook-form
+[33m197cc3da[m Implement create session button with loading and warning
+[33maaf27ea9[m Implement create session dialog
+[33m24214e4d[m Create testfrontend page
+[33me1eb69d4[m fix backend issues with rabbitmq and websockets
+[33m3fc85419[m Update websocket and dto
+[33mfddf5d03[m Set up base match service
+[33m12189e5f[m Update rabbitmq to add function for adding and removing from queue
+[33mc035e33c[m Refactor to store node_modules into correct folder
+[33md1307b39[m Install rabbitmq dependencies
+[33m281edef2[m Add mock UI for sessions page
+[33m9632d447[m[33m ([m[1;33mtag: Milestone-D3[m[33m)[m Merge pull request #26 from CS3219-AY2425S1/staging
+[33md27b1ade[m Merge pull request #25 from CS3219-AY2425S1/dockerize
+[33m149cb0b5[m[33m ([m[1;31morigin/dockerize[m[33m)[m Dockerize user-service
+[33m605af741[m Merge branch 'staging' into dockerize
+[33md4a02801[m Merge pull request #24 from CS3219-AY2425S1/dev/user-service
+[33m760e5cf8[m Remove node_modules
+[33m59b811bf[m Remove node_modules
+[33m70e38b5f[m Initial Commit
+[33m3bdc7e13[m dockerize question-service
+[33m43b60001[m[33m ([m[1;33mtag: Milestone2_submission[m[33m)[m Update README
+[33m77c25c03[m Merge pull request #23 from CS3219-AY2425S1/staging
+[33m9b4ef3ac[m Merge pull request #22 from CS3219-AY2425S1/dev/question-service
+[33mf06a23b9[m[33m ([m[1;31morigin/dev/question-service[m[33m)[m Remove non-question related code
+[33m83818823[m Remove select all option
+[33mca732127[m Update to not allow whitespace for desc and title
+[33m47126140[m Integrate backend and frontend
+[33mb07827af[m Merge branch 'dev-question-service-frontend' into dev/question-service
+[33m0bd305c8[m Merge pull request #18 from CS3219-AY2425S1/dev-question-service-backend
+[33m9af18ba8[m[33m ([m[1;31morigin/dev-question-service-backend[m[33m)[m Add test cases for question model
+[33md09cf602[m Change port to 8000 and enable cors
+[33m5fb174fb[m Change code according to review
+[33m2ed74a5b[m Remove references to completed and change color scheme of categories
+[33mcdb57234[m Add shadcn multi-select component from https://github.com/sersavan/shadcn-multi-select-component Change categories and complexity to enums and implement multiselect for editing questions
+[33mff6fb255[m Merge pull request #19 from CS3219-AY2425S1/dev/question-service-localbranch
+[33m6ca875dc[m Create add/edit and view menus
+[33m1c1e6525[m center columns
+[33m99e49c4c[m Add option other to QuestionCategory enum
+[33m7a6491ec[m Add tests for questions service
+[33m3d864dad[m Add await in controller functions and add testing for question contoller
+[33m84ed9e48[m Add business logic, add and modify filter and create question DTO
+[33md24bfd4c[m Update user dropdown to shadcn component
+[33m430f0bd5[m Merge pull request #7 from CS3219-AY2425S1/dev/question-service-localbranch
+[33m1071eb61[m Add hover scale effect to description
+[33m113f3ae6[m Truncate description when too long, add popup for description
+[33mdee07d26[m Update questions page UI to match mock UI
+[33mf88425ab[m Fix import errors
+[33m5f5a7fd4[m Add card component and update past sessions ui
+[33mdc87aa20[m Update links in navigation bar
+[33m3305296f[m Refactor and reorganize files
+[33m0a485010[m Update navigation bar
+[33m0d3af6ab[m Merge pull request #6 from CS3219-AY2425S1/dev/question-service-localbranch
+[33ma3453015[m Remove old code
+[33me36b9083[m Merge pull request #5 from CS3219-AY2425S1/dev/question-service-localbranch
+[33m36d4f844[m Add shadcn libraries and add question button
+[33mebd4c0c8[m Merge pull request #4 from CS3219-AY2425S1/dev/question-service-localbranch
+[33m7d7d413e[m Add problems solved
+[33m379b023e[m Merge pull request #3 from CS3219-AY2425S1/dev/question-service-localbranch
+[33ma900d69b[m Update questions page
+[33m7c231e08[m Merge pull request #2 from CS3219-AY2425S1/dev/question-service-localbranch
+[33m42bec727[m Create appheader and questions page
+[33m28222c1c[m Update package-lock
+[33mc675a73c[m Add new model to seperate service and data layer
+[33mdf621c3a[m Implement base working controller and service
+[33macacbfd1[m Update schema and request body for question-service
+[33mec9d14db[m update prettier config
+[33m1fd1c4a0[m Initialize Frontend
+[33m708846fb[m Initialize boilerplate code for question module
+[33m0dfb73fb[m Initialize Question Service Backend
+[33me2301c72[m add deadline
+[33m8f56f320[m Setting up GitHub Classroom Feedback
+[33m662294fd[m[33m ([m[1;31morigin/feedback[m[33m)[m GitHub Classroom Feedback
+[33m24b0ea00[m Initial commit
