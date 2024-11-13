@@ -20,6 +20,7 @@ export class CreateQuestionDto {
   complexity: QuestionComplexity;
 
   @IsArray()
+  @ArrayNotEmpty()
   testCases: { input: string; expectedOutput: string }[];
   
 }

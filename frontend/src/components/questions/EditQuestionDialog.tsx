@@ -9,10 +9,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { MultiSelect } from "@/components/ui/multi-select"
-import { Trash2 } from 'lucide-react'
-import { useForm, Controller } from 'react-hook-form'
+import { Trash2, Plus, X } from 'lucide-react'
+import { useForm, Controller, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { questionSchema, QuestionFormData } from '../../types/forms/questionSchema'
+import { Card } from "@/components/ui/card"
 
 interface EditQuestionDialogProps {
   question: Question | null
@@ -30,8 +31,14 @@ export default function EditQuestionDialog({ question, isOpen, onClose, onSave, 
       description: '',
       categories: [],
       complexity: QuestionComplexity.EASY,
+      testCases: [{ input: '', expectedOutput: '' }],
     },
   })
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "testCases",
+  });
 
   React.useEffect(() => {
     if (question) {
@@ -48,18 +55,21 @@ export default function EditQuestionDialog({ question, isOpen, onClose, onSave, 
     value: category,
   }))
 
+  const addTestCase = () => {
+    append({ input: '', expectedOutput: '' });
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
           <DialogTitle>{question?._id ? 'Edit Question' : 'Add Question'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
+            {/* Existing fields remain the same */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
+              <Label htmlFor="title" className="text-right">Title</Label>
               <div className="col-span-3">
                 <Controller
                   name="title"
@@ -69,10 +79,9 @@ export default function EditQuestionDialog({ question, isOpen, onClose, onSave, 
                 {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>}
               </div>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="categories" className="text-right">
-                Categories
-              </Label>
+              <Label htmlFor="categories" className="text-right">Categories</Label>
               <div className="col-span-3">
                 <Controller
                   name="categories"
@@ -88,10 +97,9 @@ export default function EditQuestionDialog({ question, isOpen, onClose, onSave, 
                 {errors.categories && <p className="text-red-500 text-sm mt-1">{errors.categories.message}</p>}
               </div>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="complexity" className="text-right">
-                Complexity
-              </Label>
+              <Label htmlFor="complexity" className="text-right">Complexity</Label>
               <div className="col-span-3">
                 <Controller
                   name="complexity"
@@ -112,10 +120,9 @@ export default function EditQuestionDialog({ question, isOpen, onClose, onSave, 
                 {errors.complexity && <p className="text-red-500 text-sm mt-1">{errors.complexity.message}</p>}
               </div>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
+              <Label htmlFor="description" className="text-right">Description</Label>
               <div className="col-span-3">
                 <Controller
                   name="description"
@@ -125,7 +132,71 @@ export default function EditQuestionDialog({ question, isOpen, onClose, onSave, 
                 {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>}
               </div>
             </div>
+
+            {/* New Test Cases Section */}
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label className="text-right mt-2">Test Cases</Label>
+              <div className="col-span-3 space-y-4">
+                {fields.map((field, index) => (
+                  <Card key={field.id} className="p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="text-sm font-medium">Test Case {index + 1}</span>
+                      {fields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => remove(index)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <Label>Input</Label>
+                        <Controller
+                          name={`testCases.${index}.input`}
+                          control={control}
+                          render={({ field }) => <Textarea {...field} className="mt-1" />}
+                        />
+                        {errors.testCases?.[index]?.input && (
+                          <p className="text-red-500 text-sm mt-1">{errors.testCases[index]?.input?.message}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Expected Output</Label>
+                        <Controller
+                          name={`testCases.${index}.expectedOutput`}
+                          control={control}
+                          render={({ field }) => <Textarea {...field} className="mt-1" />}
+                        />
+                        {errors.testCases?.[index]?.expectedOutput && (
+                          <p className="text-red-500 text-sm mt-1">{errors.testCases[index]?.expectedOutput?.message}</p>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addTestCase}
+                  className="w-full"
+                  disabled={fields.length >= 10}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Test Case
+                </Button>
+                {errors.testCases && typeof errors.testCases === 'object' && 'message' in errors.testCases && (
+                  <p className="text-red-500 text-sm mt-1">{errors.testCases.message as string}</p>
+                )}
+              </div>
+            </div>
           </div>
+
           <DialogFooter>
             <div className="w-full justify-between flex">
               <div>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PlayIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast"
-import DynamicTestCases from '../TestCaseCard';
+import DynamicTestCases from './TestCaseCard';
 import { CodeExecutionResponse } from '@/app/api/code-execution/route';
 import { executeCode } from '@/lib/api-user';
 import { useRouter } from 'next/navigation';
